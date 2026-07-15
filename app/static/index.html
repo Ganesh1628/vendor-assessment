@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendor Matching Engine</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; background: #f7f9fc; color: #14213d; }
+      .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+      .card { background: white; border-radius: 16px; box-shadow: 0 6px 20px rgba(20,33,61,0.08); padding: 20px; margin-bottom: 20px; }
+      h1, h2 { margin-top: 0; }
+      form { display: grid; gap: 12px; }
+      input, textarea, button { padding: 10px 12px; border-radius: 10px; border: 1px solid #cfd8e3; font-size: 14px; }
+      button { background: #2563eb; color: white; cursor: pointer; border: none; }
+      .result { display: grid; gap: 12px; }
+      .vendor { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
+      .pill { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 8px; border-radius: 999px; font-size: 12px; margin-right: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>AI-Powered Vendor Matching Engine</h1>
+        <p>Submit a requirement and receive a ranked shortlist of vendors.</p>
+        <form id="requirementForm">
+          <input id="category" placeholder="Category" required />
+          <input id="city" placeholder="City" required />
+          <input id="budget" type="number" placeholder="Budget" required />
+          <input id="guestCount" type="number" placeholder="Guest Count" required />
+          <textarea id="themeTags" placeholder="Theme tags (comma separated)"></textarea>
+          <textarea id="description" placeholder="Describe your event"></textarea>
+          <button type="submit">Find Matches</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Matches</h2>
+        <div id="results" class="result">No matches yet.</div>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('requirementForm');
+      const results = document.getElementById('results');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          category: document.getElementById('category').value,
+          city: document.getElementById('city').value,
+          budget: Number(document.getElementById('budget').value),
+          guest_count: Number(document.getElementById('guestCount').value),
+          theme_tags: document.getElementById('themeTags').value.split(',').map(t => t.trim()).filter(Boolean),
+          description: document.getElementById('description').value,
+        };
+
+        const response = await fetch('/api/requirements/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        results.innerHTML = data.matches.map((match) => `
+          <div class="vendor">
+            <h3>${match.vendor_name}</h3>
+            <p><strong>Score:</strong> ${match.score}</p>
+            <p><strong>Why matched:</strong> ${match.match_reason}</p>
+            <div>${Object.entries(match.score_breakdown).filter(([k,v]) => k !== 'reason').map(([k,v]) => `<span class="pill">${k}: ${v}</span>`).join('')}</div>
+          </div>
+        `).join('');
+      });
+    </script>
+  </body>
+</html>
