@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
@@ -13,8 +14,13 @@ from sqlalchemy import create_engine, String, Float, Integer, DateTime, JSON, Fo
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, sessionmaker
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_FILE = BASE_DIR.parent / "assessment.db"
+DATA_DIR = Path(os.getenv("VERCEL_BUILD_OUTPUT_DIR", BASE_DIR.parent))
+if os.getenv("VERCEL"):
+    DATABASE_FILE = Path(os.getenv("VERCEL_STORAGE_PATH", "/tmp")) / "assessment.db"
+else:
+    DATABASE_FILE = DATA_DIR / "assessment.db"
 DATABASE_URL = f"sqlite:///{DATABASE_FILE.as_posix()}"
+DATABASE_FILE.parent.mkdir(parents=True, exist_ok=True)
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 WAVE_SIZE = 3
 MATCH_LIMIT = 5
