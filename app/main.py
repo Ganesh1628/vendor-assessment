@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -9,7 +12,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, String, Float, Integer, DateTime, JSON, ForeignKey, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, sessionmaker
 
-DATABASE_URL = "sqlite:///./assessment.db"
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE_FILE = BASE_DIR.parent / "assessment.db"
+DATABASE_URL = f"sqlite:///{DATABASE_FILE.as_posix()}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 WAVE_SIZE = 3
 MATCH_LIMIT = 5
@@ -155,11 +160,11 @@ def startup_event():
 
 @app.get("/")
 def serve_frontend():
-    return FileResponse("app/static/home.html")
+    return FileResponse(BASE_DIR / "static" / "home.html")
 
 @app.get("/match")
 def serve_match_page():
-    return FileResponse("app/static/index.html")
+    return FileResponse(BASE_DIR / "static" / "index.html")
 
 
 class RequirementCreateRequest(BaseModel):
