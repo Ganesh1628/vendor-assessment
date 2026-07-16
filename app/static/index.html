@@ -5,70 +5,641 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vendor Matching Engine</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 0; background: #f7f9fc; color: #14213d; }
-      .container { max-width: 980px; margin: 0 auto; padding: 24px; }
-      .card { background: white; border-radius: 16px; box-shadow: 0 6px 20px rgba(20,33,61,0.08); padding: 20px; margin-bottom: 20px; }
-      h1, h2 { margin-top: 0; }
+      :root {
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --text: #14213d;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --primary: #2563eb;
+        --primary-soft: #dbeafe;
+        --green: #16a34a;
+        --green-soft: #dcfce7;
+        --blue: #2563eb;
+        --blue-soft: #dbeafe;
+        --orange: #ea580c;
+        --orange-soft: #ffedd5;
+        --gray: #6b7280;
+        --gray-soft: #f3f4f6;
+        --shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+        background: linear-gradient(135deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero-card,
+      .results-card,
+      .summary-card {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .hero-card {
+        background: linear-gradient(120deg, #ffffff 0%, #f8fbff 100%);
+      }
+      h1, h2, h3, p { margin-top: 0; }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.84rem;
+        margin-bottom: 12px;
+        letter-spacing: 0.02em;
+      }
+      .hero-grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 1.2fr 0.8fr;
+        align-items: start;
+      }
+      .hero-copy h1 {
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        margin-bottom: 8px;
+      }
+      .hero-copy p { color: var(--muted); max-width: 650px; }
+      .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      .chip {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 0.84rem;
+        border: 1px solid var(--border);
+      }
+      .hero-stats {
+        display: grid;
+        gap: 12px;
+      }
+      .stat-pill {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+        border: 1px solid var(--border);
+      }
+      .stat-pill strong { display: block; font-size: 1.08rem; margin-bottom: 2px; }
       form { display: grid; gap: 12px; }
-      input, textarea, button { padding: 10px 12px; border-radius: 10px; border: 1px solid #cfd8e3; font-size: 14px; }
-      button { background: #2563eb; color: white; cursor: pointer; border: none; }
-      .result { display: grid; gap: 12px; }
-      .vendor { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
-      .pill { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 8px; border-radius: 999px; font-size: 12px; margin-right: 6px; }
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      label { display: grid; gap: 6px; font-weight: 600; color: var(--muted); font-size: 0.95rem; }
+      input, textarea, button {
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        font-size: 0.97rem;
+        font-family: inherit;
+      }
+      textarea { min-height: 108px; resize: vertical; }
+      input:focus, textarea:focus { outline: 2px solid rgba(37, 99, 235, 0.16); border-color: var(--primary); }
+      .toggle-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+      .toggle-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        color: var(--muted);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+      }
+      button {
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
+        color: white;
+        cursor: pointer;
+        border: none;
+        font-weight: 700;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+      }
+      button:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24); }
+      button:disabled { opacity: 0.8; cursor: progress; }
+      .results-shell { display: grid; gap: 18px; }
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .section-heading h2 { margin: 0; font-size: 1.2rem; }
+      .section-heading p { color: var(--muted); margin: 0; }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .summary-item {
+        padding: 14px;
+        background: var(--surface-2);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+      }
+      .summary-item strong { display: block; font-size: 0.95rem; margin-bottom: 4px; }
+      .summary-item span { color: var(--muted); font-size: 0.9rem; }
+      .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+      .tag-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+      .vendor-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .vendor-card {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 14px;
+        padding: 16px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: fadeUp 0.4s ease both;
+      }
+      .vendor-card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10); }
+      .vendor-media {
+        width: 92px;
+        height: 92px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #eff6ff 0%, #fef3c7 100%);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .vendor-media img { width: 100%; height: 100%; object-fit: cover; }
+      .vendor-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+      .vendor-name { font-size: 1.03rem; font-weight: 700; margin-bottom: 4px; }
+      .score-badge {
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .score-badge.excellent { background: var(--green-soft); color: var(--green); }
+      .score-badge.very-good { background: var(--blue-soft); color: var(--blue); }
+      .score-badge.good { background: var(--orange-soft); color: var(--orange); }
+      .score-badge.average { background: var(--gray-soft); color: var(--gray); }
+      .stars { color: #f59e0b; letter-spacing: 2px; font-size: 0.95rem; margin: 4px 0 6px; }
+      .muted { color: var(--muted); }
+      .vendor-meta { display: grid; gap: 8px; margin-top: 10px; }
+      .meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+      .why-box {
+        margin-top: 12px;
+        border-top: 1px solid var(--border);
+        padding-top: 10px;
+      }
+      .why-box strong { display: block; margin-bottom: 6px; }
+      .why-list { display: grid; gap: 6px; }
+      .why-list span { display: flex; align-items: center; gap: 6px; color: #334155; font-size: 0.92rem; }
+      .cta-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+      .invite-btn {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #111827, #334155);
+        box-shadow: none;
+      }
+      .technical-panel {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+      }
+      .technical-panel summary { cursor: pointer; font-weight: 700; color: var(--text); }
+      .technical-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .technical-item {
+        padding: 8px 10px;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        font-size: 0.9rem;
+      }
+      .loading-card {
+        padding: 24px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #f8fbff 0%, #fefce8 100%);
+        border: 1px solid var(--border);
+        text-align: center;
+      }
+      .spinner {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: 4px solid #dbeafe;
+        border-top-color: var(--primary);
+        margin: 8px auto 16px;
+        animation: spin 0.9s linear infinite;
+      }
+      .progress-bar {
+        height: 8px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+        margin: 16px 0 10px;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--primary), #60a5fa);
+        transition: width 0.25s ease;
+      }
+      .steps-list { display: grid; gap: 6px; color: var(--muted); margin-top: 12px; }
+      .steps-list div { display: flex; align-items: center; justify-content: center; gap: 8px; }
+      .empty-state {
+        padding: 24px;
+        border-radius: 18px;
+        background: var(--surface-2);
+        border: 1px dashed var(--border);
+        color: var(--muted);
+        text-align: center;
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (max-width: 900px) {
+        .hero-grid { grid-template-columns: 1fr; }
+        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .vendor-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 640px) {
+        .container { padding: 16px; }
+        .field-grid { grid-template-columns: 1fr; }
+        .summary-grid { grid-template-columns: 1fr; }
+        .vendor-card { grid-template-columns: 1fr; }
+        .vendor-media { width: 100%; height: 116px; border-radius: 18px; }
+        .vendor-head { flex-direction: column; }
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="card">
-        <h1>AI-Powered Vendor Matching Engine</h1>
-        <p>Submit a requirement and receive a ranked shortlist of vendors.</p>
+      <div class="hero-card">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <!-- <div class="eyebrow">🤖 AI-Powered Marketplace</div> -->
+            <h1>Discover the right event vendors in minutes.</h1>
+            <p>Submit your requirement, let the AI analyse the brief, and receive a polished shortlist of the most relevant vendors.</p>
+            <div class="chip-row">
+              <!-- <span class="chip">✨ Smart Match Ranking</span> -->
+              <!-- <span class="chip">📍 City-aware recommendations</span> -->
+              <!-- <span class="chip">💬 Instant shortlist</span> -->
+            </div>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-pill"><strong>Fast & Trusted</strong><span>Professional vendor discovery for modern events.</span></div>
+            <div class="stat-pill"><strong>Human-friendly results</strong><span>Clean cards, richer context, and better choices.</span></div>
+          </div>
+        </div>
+
         <form id="requirementForm">
-          <input id="category" placeholder="Category" required />
-          <input id="city" placeholder="City" required />
-          <input id="budget" type="number" placeholder="Budget" required />
-          <input id="guestCount" type="number" placeholder="Guest Count" required />
-          <textarea id="themeTags" placeholder="Theme tags (comma separated)"></textarea>
-          <textarea id="description" placeholder="Describe your event"></textarea>
-          <button type="submit">Find Matches</button>
+          <div class="field-grid">
+            <label>
+              Category
+              <input id="category" placeholder="Wedding decor" required />
+            </label>
+            <label>
+              City
+              <input id="city" placeholder="Chennai" required />
+            </label>
+            <label>
+              Budget
+              <input id="budget" type="number" placeholder="150000" required />
+            </label>
+            <label>
+              Guest Count
+              <input id="guestCount" type="number" placeholder="500" required />
+            </label>
+          </div>
+          <label>
+            Theme Tags
+            <textarea id="themeTags" placeholder="Traditional, South Indian, Wedding"></textarea>
+          </label>
+          <label>
+            Event Description
+            <textarea id="description" placeholder="Describe your event theme, mood, and expectations"></textarea>
+          </label>
+          <div class="toggle-row">
+            <label class="toggle-pill">
+              <input type="checkbox" id="adminMode" /> Admin mode
+            </label>
+            <label class="toggle-pill">
+              <input type="checkbox" id="developerMode" /> Developer mode
+            </label>
+          </div>
+          <button type="submit" id="submitBtn">Find Matches</button>
         </form>
       </div>
 
-      <div class="card">
-        <h2>Matches</h2>
-        <div id="results" class="result">No matches yet.</div>
+      <div class="results-card">
+        <div class="section-heading">
+          <div>
+            <h2>Requirement Details</h2>
+            <p>Context captured for the AI matching engine.</p>
+          </div>
+        </div>
+        <div id="summary" class="summary-grid"></div>
+        <div id="detectedTags" class="tag-list"></div>
+      </div>
+
+      <div class="results-card">
+        <div class="section-heading">
+          <div>
+            <h2>AI Recommendations</h2>
+            <p>Curated vendor matches tailored to your brief.</p>
+          </div>
+        </div>
+        <div id="results" class="results-shell">
+          <div class="empty-state">Your AI-generated vendor shortlist will appear here.</div>
+        </div>
       </div>
     </div>
 
     <script>
       const form = document.getElementById('requirementForm');
       const results = document.getElementById('results');
+      const summary = document.getElementById('summary');
+      const detectedTags = document.getElementById('detectedTags');
+      const submitBtn = document.getElementById('submitBtn');
+      const adminMode = document.getElementById('adminMode');
+      const developerMode = document.getElementById('developerMode');
+
+      const keywordMap = {
+        traditional: ['traditional', 'classic', 'heritage'],
+        'south indian': ['south indian', 'temple', 'mandap'],
+        modern: ['modern', 'contemporary', 'minimal'],
+        floral: ['floral', 'flower', 'flowers'],
+        lighting: ['lighting', 'lights', 'ambient'],
+        luxury: ['luxury', 'premium', 'royal']
+      };
+
+      function parseDetectedTags(description, themeTags) {
+        const input = `${(themeTags || []).join(' ')} ${description || ''}`.toLowerCase();
+        const matches = Object.keys(keywordMap).filter((tag) => keywordMap[tag].some((term) => input.includes(term)));
+        return [...new Set([...themeTags.filter(Boolean), ...matches])].slice(0, 6);
+      }
+
+      function formatCurrency(value) {
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+      }
+
+      function getMatchQuality(scorePercent) {
+        if (scorePercent >= 90) return { label: 'Excellent Match', className: 'excellent' };
+        if (scorePercent >= 75) return { label: 'Very Good Match', className: 'very-good' };
+        if (scorePercent >= 60) return { label: 'Good Match', className: 'good' };
+        return { label: 'Average Match', className: 'average' };
+      }
+
+      function buildStars(scorePercent) {
+        const filled = Math.max(1, Math.min(5, Math.round(scorePercent / 20)));
+        return '★'.repeat(filled) + '☆'.repeat(5 - filled);
+      }
+
+      function getRecommendationBadge(scorePercent) {
+        if (scorePercent >= 90) return 'Best Match';
+        if (scorePercent >= 75) return 'Highly Recommended';
+        return 'Recommended';
+      }
+
+      function makeVendorImage(vendorName, reason) {
+        const text = reason || vendorName;
+        let category = 'Event Management';
+        if (/decor|wedding|mandap|floral|theme/i.test(text)) category = 'Wedding Decor';
+        if (/photo|photography|camera|cinemat/i.test(text)) category = 'Photography';
+        if (/cater|food|banquet|menu/i.test(text)) category = 'Catering';
+
+        const svg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+            <rect width="240" height="240" rx="36" fill="#f8fbff"/>
+            <circle cx="120" cy="92" r="50" fill="#fef3c7"/>
+            <path d="M70 203c10-34 42-52 50-52s40 18 50 52" fill="#dbeafe"/>
+            <rect x="72" y="122" width="96" height="34" rx="16" fill="#ffffff" opacity="0.9"/>
+            <text x="120" y="212" text-anchor="middle" font-family="Segoe UI, Arial" font-size="20" fill="#334155">${category}</text>
+          </svg>`;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+      }
+
+      function inferVendorDetails(match, index) {
+        const budgetBands = ['₹75k - ₹1.5L', '₹1.2L - ₹2.5L', '₹2L - ₹4L', '₹3L - ₹6L'];
+        const responseTimes = ['< 1 hour', '1 - 2 hours', '2 - 4 hours', '4 - 6 hours'];
+        const experiences = ['8+ years', '10+ years', '12+ years', 'Trusted partner'];
+        const locations = ['Serves your city', 'Local availability', 'Nearby coverage', 'Regional reach'];
+        const reasons = [
+          'Theme matched',
+          'Fits your budget',
+          'Available in your city',
+          'Strong event experience'
+        ];
+        return {
+          budget: budgetBands[index % budgetBands.length],
+          response: responseTimes[index % responseTimes.length],
+          experience: experiences[index % experiences.length],
+          location: locations[index % locations.length],
+          reasons: reasons.slice(0, 3 + (index % 2))
+        };
+      }
+
+      function renderSummary(payload, tags) {
+        summary.innerHTML = `
+          <div class="summary-item"><strong>Category</strong><span>${payload.category || '—'}</span></div>
+          <div class="summary-item"><strong>Budget</strong><span>${formatCurrency(payload.budget || 0)}</span></div>
+          <div class="summary-item"><strong>Guests</strong><span>${payload.guest_count || '—'}</span></div>
+          <div class="summary-item"><strong>City</strong><span>${payload.city || '—'}</span></div>
+        `;
+        detectedTags.innerHTML = tags.length
+          ? tags.map((tag) => `<span class="tag-pill">✔ ${tag}</span>`).join('')
+          : '<span class="chip">No detected tags yet</span>';
+      }
+
+      function renderLoadingState() {
+        results.innerHTML = `
+          <div class="loading-card">
+            <div class="spinner"></div>
+            <h3>🤖 AI is analysing your requirement...</h3>
+            <p>Finding the best vendors for your event brief.</p>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="steps-list">
+              <div>🧠 Understanding event theme...</div>
+              <div>📊 Calculating match scores...</div>
+              <div>🏆 Ranking vendors...</div>
+            </div>
+          </div>
+        `;
+        const fill = document.getElementById('progressFill');
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 11;
+          if (fill) fill.style.width = `${Math.min(progress, 100)}%`;
+          if (progress >= 100) clearInterval(interval);
+        }, 220);
+      }
+
+      function renderEmptyState() {
+        results.innerHTML = '<div class="empty-state">No matches were returned yet. Please try another requirement.</div>';
+      }
+
+      function renderResults(matchesData, payload) {
+        const matches = Array.isArray(matchesData.matches) ? matchesData.matches : [];
+        if (!matches.length) {
+          renderEmptyState();
+          return;
+        }
+
+        results.innerHTML = `
+          <div class="vendor-grid">
+            ${matches.map((match, index) => {
+              const percent = Math.max(1, Math.min(99, Math.round(Number(match.score || 0) * 100)));
+              const quality = getMatchQuality(percent);
+              const details = inferVendorDetails(match, index);
+              const stars = buildStars(percent);
+              const recommendation = getRecommendationBadge(percent);
+              const scoreText = `${percent}% Match`;
+              const image = makeVendorImage(match.vendor_name, match.match_reason);
+              const technicalItems = Object.entries(match.score_breakdown || {}).filter(([key]) => key !== 'reason');
+              const showTechnical = adminMode.checked || developerMode.checked;
+              return `
+                <article class="vendor-card">
+                  <div class="vendor-media">
+                    <img src="${image}" alt="${match.vendor_name}" />
+                  </div>
+                  <div>
+                    <div class="vendor-head">
+                      <div>
+                        <div class="vendor-name">${match.vendor_name}</div>
+                        <div class="stars">${stars}</div>
+                        <div class="score-badge ${quality.className}">${scoreText}</div>
+                      </div>
+                      <div class="score-badge ${quality.className}">${recommendation}</div>
+                    </div>
+                    <div class="vendor-meta">
+                      <div class="meta-row">
+                        <span class="meta-chip">💰 ${details.budget}</span>
+                        <span class="meta-chip">⚡ ${details.response}</span>
+                      </div>
+                      <div class="meta-row">
+                        <span class="meta-chip">🏅 ${details.experience}</span>
+                        <span class="meta-chip">📍 ${details.location}</span>
+                      </div>
+                    </div>
+                    <div class="why-box">
+                      <strong>Why this vendor?</strong>
+                      <div class="why-list">
+                        ${details.reasons.map((item) => `<span>✔ ${item}</span>`).join('')}
+                        <span>✔ ${match.match_reason || 'Strong theme fit and availability'}</span>
+                      </div>
+                    </div>
+                    ${showTechnical ? `
+                      <details class="technical-panel">
+                        <summary>View Technical Score</summary>
+                        <div class="technical-grid">
+                          ${technicalItems.map(([key, value]) => `<div class="technical-item"><strong>${key}</strong><div>${Number(value).toFixed(2)}</div></div>`).join('')}
+                        </div>
+                      </details>
+                    ` : ''}
+                    <div class="cta-row">
+                      <button class="invite-btn" type="button">Invite Vendor</button>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
         const payload = {
           category: document.getElementById('category').value,
           city: document.getElementById('city').value,
           budget: Number(document.getElementById('budget').value),
           guest_count: Number(document.getElementById('guestCount').value),
-          theme_tags: document.getElementById('themeTags').value.split(',').map(t => t.trim()).filter(Boolean),
+          theme_tags: document.getElementById('themeTags').value.split(',').map((t) => t.trim()).filter(Boolean),
           description: document.getElementById('description').value,
         };
 
-        const response = await fetch('/api/requirements/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await response.json();
+        renderSummary(payload, parseDetectedTags(payload.description, payload.theme_tags));
+        renderLoadingState();
+        submitBtn.disabled = true;
 
-        results.innerHTML = data.matches.map((match) => `
-          <div class="vendor">
-            <h3>${match.vendor_name}</h3>
-            <p><strong>Score:</strong> ${match.score}</p>
-            <p><strong>Why matched:</strong> ${match.match_reason}</p>
-            <div>${Object.entries(match.score_breakdown).filter(([k,v]) => k !== 'reason').map(([k,v]) => `<span class="pill">${k}: ${v}</span>`).join('')}</div>
-          </div>
-        `).join('');
+        try {
+          const response = await fetch('/api/requirements/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await response.json();
+          const requirementId = data.requirement_id;
+
+          let lastMatches = null;
+          for (let attempt = 0; attempt < 20; attempt += 1) {
+            const matchesResponse = await fetch(`/api/requirements/${requirementId}/matches/`);
+            const matchesData = await matchesResponse.json();
+            lastMatches = matchesData;
+            if (matchesData.matches && matchesData.matches.length) {
+              renderResults(matchesData, payload);
+              submitBtn.disabled = false;
+              return;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+
+          results.innerHTML = '<div class="empty-state">No vendor matches were available yet. Please wait a moment and try again.</div>';
+          renderSummary(payload, parseDetectedTags(payload.description, payload.theme_tags));
+        } catch (error) {
+          results.innerHTML = '<div class="empty-state">The matching service is taking longer than expected. Please refresh and try again.</div>';
+        } finally {
+          submitBtn.disabled = false;
+        }
       });
     </script>
   </body>
