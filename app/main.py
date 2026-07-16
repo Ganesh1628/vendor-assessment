@@ -172,6 +172,10 @@ def serve_frontend():
 def serve_match_page():
     return FileResponse(BASE_DIR / "static" / "index.html")
 
+@app.get("/favicon.ico")
+def serve_favicon():
+    return FileResponse(BASE_DIR / "static" / "favicon.ico")
+
 
 class RequirementCreateRequest(BaseModel):
     category: str
